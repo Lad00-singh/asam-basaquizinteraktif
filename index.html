@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Interaktif Kimia: Petualangan Asam-Basa 3D</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Poppins & Fredoka for Pixar-like Playful Styling -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti for Celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                        display: ['Fredoka', 'cursive'],
+                    },
+                    colors: {
+                        pixar: {
+                            blue: '#00A8FF',
+                            purple: '#9C88FF',
+                            pink: '#FF70A6',
+                            yellow: '#FFD166',
+                            green: '#06D6A0',
+                            dark: '#1E272E',
+                            card: '#2F3640'
+                        }
+                    },
+                    boxShadow: {
+                        '3d-blue': '0 8px 0 #0080FF, 0 15px 20px rgba(0,0,0,0.15)',
+                        '3d-green': '0 8px 0 #05B386, 0 15px 20px rgba(0,0,0,0.15)',
+                        '3d-yellow': '0 8px 0 #E6B800, 0 15px 20px rgba(0,0,0,0.15)',
+                        '3d-purple': '0 8px 0 #7A63DF, 0 15px 20px rgba(0,0,0,0.15)',
+                        '3d-pink': '0 8px 0 #E0528A, 0 15px 20px rgba(0,0,0,0.15)',
+                        'card-3d': '0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e0e7ff 100%);
+            min-height: 100vh;
+        }
+
+        .font-display {
+            font-family: 'Fredoka', cursive;
+        }
+
+        /* Claymorphism / Pixar 3D Effect utilities */
+        .pixar-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            border-radius: 2rem;
+        }
+
+        .pixar-btn {
+            transition: all 0.15s ease;
+            transform: translateY(0);
+        }
+
+        .pixar-btn:active:not(:disabled) {
+            transform: translateY(6px) !important;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.2) !important;
+        }
+
+        /* Bouncing animation for mascot */
+        @keyframes gentle-bounce {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+        .animate-mascot {
+            animation: gentle-bounce 4s ease-in-out infinite;
+        }
+
+        /* Bubble effect in background */
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(0, 168, 255, 0.4));
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.6);
+            animation: float 8s infinite ease-in-out;
+            pointer-events: none;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) scale(1); opacity: 0.7; }
+            50% { transform: translateY(-30px) scale(1.05); opacity: 0.9; }
+            100% { transform: translateY(0px) scale(1); opacity: 0.7; }
+        }
+
+        /* Option selection animations */
+        .option-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .option-card:hover {
+            transform: scale(1.02) translateY(-2px);
+        }
+
+        /* Glowing beaker effect */
+        .beaker-glow {
+            filter: drop-shadow(0 10px 15px rgba(0, 168, 255, 0.3));
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00A8FF;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col justify-between relative overflow-x-hidden min-h-screen">
+
+    <!-- Background Decorative Bubbles -->
+    <div class="bubble w-16 h-16 top-12 left-10" style="animation-delay: 0s;"></div>
+    <div class="bubble w-24 h-24 top-1/3 right-12" style="animation-delay: 2s;"></div>
+    <div class="bubble w-12 h-12 bottom-20 left-1/4" style="animation-delay: 4s;"></div>
+    <div class="bubble w-20 h-20 top-2/3 right-1/3" style="animation-delay: 1s;"></div>
+
+    <!-- Header Navigation Bar -->
+    <header class="w-full max-w-5xl mx-auto px-4 pt-6 pb-2">
+        <div class="pixar-card p-4 flex justify-between items-center shadow-card-3d border-2 border-white">
+            <div class="flex items-center gap-3">
+                <!-- Pixar Style 3D Logo Icon -->
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-cyan-500/30">
+                    <i class="fa-solid fa-flask"></i>
+                </div>
+                <div>
+                    <h1 class="font-display text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        Lab Kimia Interaktif
+                    </h1>
+                    <p class="text-xs text-slate-500 font-medium">Materi: Asam-Basa (Kelas XI SMA)</p>
+                </div>
+            </div>
+
+            <!-- Student Profile Badge / Info -->
+            <div id="user-badge" class="hidden sm:flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">
+                <i class="fa-solid fa-user-astronaut text-blue-500"></i>
+                <span id="display-student-name" class="font-semibold text-xs sm:text-sm text-slate-700">Siswa Genius</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="w-full max-w-5xl mx-auto px-4 py-4 flex-grow flex items-center justify-center">
+
+        <!-- SCREEN 1: WELCOME / START SCREEN -->
+        <section id="welcome-screen" class="w-full">
+            <div class="pixar-card p-6 sm:p-10 shadow-card-3d relative overflow-hidden text-center max-w-2xl mx-auto border-2 border-white">
+                
+                <!-- Pixar Mascot Illustration (High Quality SVG Rendered) -->
+                <div class="relative w-44 h-44 mx-auto mb-4 animate-mascot">
+                    <svg viewBox="0 0 200 200" class="w-full h-full beaker-glow drop-shadow-xl">
+                        <!-- Beaker Body -->
+                        <path d="M60 40 L140 40 L140 50 L130 60 L130 150 C130 165 118 175 100 175 C82 175 70 165 70 150 L70 60 L60 50 Z" fill="#E2E8F0" stroke="#94A3B8" stroke-width="4"/>
+                        <!-- Liquid Inside -->
+                        <path d="M72 90 Q100 80 128 90 L128 150 C128 162 116 170 100 170 C84 170 72 162 72 150 Z" fill="#00A8FF" opacity="0.85"/>
+                        <!-- Liquid Highlights -->
+                        <ellipse cx="100" cy="90" rx="28" ry="5" fill="#38BDF8"/>
+                        <!-- Bubbles inside liquid -->
+                        <circle cx="85" cy="130" r="5" fill="white" opacity="0.6"/>
+                        <circle cx="110" cy="110" r="7" fill="white" opacity="0.6"/>
+                        <circle cx="95" cy="145" r="4" fill="white" opacity="0.6"/>
+                        <!-- Cute Pixar Eyes -->
+                        <circle cx="88" cy="115" r="7" fill="#1E272E"/>
+                        <circle cx="112" cy="115" r="7" fill="#1E272E"/>
+                        <circle cx="90" cy="113" r="2.5" fill="white"/>
+                        <circle cx="114" cy="113" r="2.5" fill="white"/>
+                        <!-- Smile -->
+                        <path d="M94 128 Q100 134 106 128" stroke="#1E272E" stroke-width="3" stroke-linecap="round" fill="none"/>
+                        <!-- Rosy Cheeks -->
+                        <circle cx="82" cy="122" r="4" fill="#FF70A6" opacity="0.6"/>
+                        <circle cx="118" cy="122" r="4" fill="#FF70A6" opacity="0.6"/>
+                        <!-- Sparkles -->
+                        <polygon points="150,40 153,47 160,50 153,53 150,60 147,53 140,50 147,47" fill="#FFD166"/>
+                        <polygon points="40,90 42,94 47,96 42,98 40,103 38,98 33,96 38,94" fill="#FF70A6"/>
+                    </svg>
+                </div>
+
+                <span class="inline-block px-4 py-1.5 rounded-full bg-blue-100 text-blue-700 font-bold text-xs sm:text-sm mb-3">
+                    ✨ Petualangan Sains Interaktif
+                </span>
+                
+                <h2 class="font-display text-3xl sm:text-4xl font-extrabold text-slate-800 mb-3">
+                    Misi Asam & Basa 🧪
+                </h2>
+                
+                <p class="text-slate-600 text-sm sm:text-base leading-relaxed mb-6 max-w-lg mx-auto">
+                    Halo Saintis Muda! Siap menguji wawasan kimia kamu? Selesaikan 5 tantangan penalaran asam-basa dan dapatkan skor terbaikmu!
+                </p>
+
+                <!-- Input Form Name -->
+                <div class="max-w-md mx-auto mb-6 text-left">
+                    <label for="student-name" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 ml-1">
+                        Masukkan Nama Kamu:
+                    </label>
+                    <div class="relative">
+                        <input type="text" id="student-name" placeholder="Contoh: Budi Pratama" 
+                            class="w-full px-5 py-3.5 rounded-2xl bg-white border-2 border-slate-200 focus:border-blue-500 focus:outline-none text-slate-800 font-semibold shadow-inner transition">
+                        <div class="absolute right-3 top-3.5 text-slate-400">
+                            <i class="fa-solid fa-pen"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Cards -->
+                <div class="grid grid-cols-3 gap-3 max-w-md mx-auto mb-8">
+                    <div class="bg-blue-50/80 p-3 rounded-2xl border border-blue-100 text-center">
+                        <i class="fa-solid fa-list-check text-blue-500 text-lg mb-1"></i>
+                        <p class="text-xs font-bold text-slate-700">5 Soal</p>
+                        <p class="text-[10px] text-slate-500">Pilihan Ganda</p>
+                    </div>
+                    <div class="bg-purple-50/80 p-3 rounded-2xl border border-purple-100 text-center">
+                        <i class="fa-solid fa-clock text-purple-500 text-lg mb-1"></i>
+                        <p class="text-xs font-bold text-slate-700">25 Menit</p>
+                        <p class="text-[10px] text-slate-500">Waktu Ideal</p>
+                    </div>
+                    <div class="bg-amber-50/80 p-3 rounded-2xl border border-amber-100 text-center">
+                        <i class="fa-solid fa-brain text-amber-500 text-lg mb-1"></i>
+                        <p class="text-xs font-bold text-slate-700">Penalaran</p>
+                        <p class="text-[10px] text-slate-500">Level TKA</p>
+                    </div>
+                </div>
+
+                <!-- Start Button -->
+                <button onclick="startQuiz()" class="pixar-btn w-full max-w-md bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-display text-lg sm:text-xl py-4 rounded-2xl shadow-3d-blue font-bold flex items-center justify-center gap-3 mx-auto">
+                    <span>MULAI PETUALANGAN</span>
+                    <i class="fa-solid fa-rocket"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: QUIZ INTERACTION SCREEN -->
+        <section id="quiz-screen" class="w-full hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- Left Sidebar: Progress, Mascot & Assistant Tools -->
+                <div class="lg:col-span-4 flex flex-col gap-4">
+                    
+                    <!-- Progress & Timer Card -->
+                    <div class="pixar-card p-5 shadow-card-3d">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Progres Misi</span>
+                            <span id="question-tracker" class="font-display font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full text-xs">
+                                Soal 1 dari 5
+                            </span>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="w-full bg-slate-100 h-4 rounded-full overflow-hidden p-0.5 border border-slate-200 mb-4">
+                            <div id="progress-bar" class="bg-gradient-to-r from-blue-400 to-indigo-500 h-full rounded-full transition-all duration-500" style="width: 20%;"></div>
+                        </div>
+
+                        <!-- Timer Banner -->
+                        <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <div class="flex items-center gap-2 text-slate-600">
+                                <i class="fa-solid fa-stopwatch text-indigo-500 text-lg animate-pulse"></i>
+                                <span class="text-xs font-semibold">Sisa Waktu:</span>
+                            </div>
+                            <span id="timer-display" class="font-mono text-lg font-bold text-indigo-600">25:00</span>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Mascot Assistant & Live Formula Hint -->
+                    <div class="pixar-card p-5 shadow-card-3d bg-gradient-to-br from-white to-blue-50/50">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 h-12 relative flex-shrink-0">
+                                <svg viewBox="0 0 100 100" class="w-full h-full">
+                                    <circle cx="50" cy="50" r="45" fill="#00A8FF"/>
+                                    <circle cx="35" cy="40" r="6" fill="#FFF"/>
+                                    <circle cx="65" cy="40" r="6" fill="#FFF"/>
+                                    <circle cx="36" cy="40" r="3" fill="#1E272E"/>
+                                    <circle cx="66" cy="40" r="3" fill="#1E272E"/>
+                                    <path d="M40 65 Q50 75 60 65" stroke="#FFF" stroke-width="4" stroke-linecap="round" fill="none"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-display font-bold text-sm text-slate-800">Asisten Chemmy</h4>
+                                <p class="text-[11px] text-slate-500">Petunjuk Lab Kimia</p>
+                            </div>
+                        </div>
+                        
+                        <div id="mascot-hint-box" class="bg-white p-3 rounded-xl border border-blue-100 text-xs text-slate-600 shadow-sm leading-relaxed">
+                            "Yuk perhatikan sifat senyawa di soal! Apakah ia Asam Kuat, Basa Kuat, atau Basa Lemah?"
+                        </div>
+
+                        <!-- Quick Formula Cheat Sheet Accordion -->
+                        <button onclick="toggleFormulaModal()" class="w-full mt-3 py-2 px-3 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-purple-200 transition">
+                            <i class="fa-solid fa-square-root-variable"></i>
+                            <span>Rumus Kimia Penting</span>
+                        </button>
+                    </div>
+
+                    <!-- Virtual Scratchpad / Calc Toggle Button -->
+                    <div class="pixar-card p-4 shadow-card-3d text-center">
+                        <button onclick="toggleScratchpad()" class="w-full py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-amber-200 transition">
+                            <i class="fa-solid fa-calculator"></i>
+                            <span>Buka Oret-oretan / Kalkulator Log</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Area: Question Card & Options -->
+                <div class="lg:col-span-8">
+                    <div class="pixar-card p-6 sm:p-8 shadow-card-3d relative">
+                        
+                        <!-- Question Header / Tag -->
+                        <div class="flex items-center justify-between mb-4">
+                            <span id="question-category" class="bg-indigo-100 text-indigo-700 text-xs font-extrabold px-3 py-1.5 rounded-xl uppercase tracking-wider">
+                                Topik Soal
+                            </span>
+                            <span class="text-xs font-bold text-slate-400">Poin: 20</span>
+                        </div>
+
+                        <!-- Question Text -->
+                        <h3 id="question-text" class="text-base sm:text-lg font-bold text-slate-800 leading-relaxed mb-6">
+                            Loading pertanyaan...
+                        </h3>
+
+                        <!-- Chemical Experiment Visual Canvas / Dynamic Illustration -->
+                        <div id="visual-experiment" class="mb-6 p-4 rounded-2xl bg-slate-900 text-white flex items-center justify-around relative overflow-hidden min-h-[140px]">
+                            <!-- Liquid Animation & Formula Representation dynamically rendered here -->
+                        </div>
+
+                        <!-- Answer Options Container -->
+                        <div id="options-container" class="space-y-3 mb-6">
+                            <!-- Options rendered dynamically -->
+                        </div>
+
+                        <!-- Navigation Footer -->
+                        <div class="flex justify-between items-center pt-4 border-t border-slate-100">
+                            <button id="prev-btn" onclick="prevQuestion()" disabled class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs sm:text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-200 transition">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                <span>Sebelumnya</span>
+                            </button>
+
+                            <button id="next-btn" onclick="nextQuestion()" class="pixar-btn px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-3d-blue">
+                                <span>Selanjutnya</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SCREEN 3: RESULT & REVIEW SCREEN -->
+        <section id="result-screen" class="w-full hidden">
+            <div class="pixar-card p-6 sm:p-10 shadow-card-3d max-w-3xl mx-auto text-center border-2 border-white">
+                
+                <!-- Celebration Header -->
+                <div class="w-20 h-20 mx-auto mb-4 bg-gradient-to-tr from-yellow-400 to-amber-500 rounded-3xl flex items-center justify-center text-white text-4xl shadow-3d-yellow">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+
+                <h2 class="font-display text-3xl sm:text-4xl font-extrabold text-slate-800 mb-1">
+                    Laporan Hasil Misi!
+                </h2>
+                <p id="result-greeting" class="text-slate-500 text-sm mb-6">Kerja bagus, Saintis!</p>
+
+                <!-- Score Badge Box -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                    <div class="bg-blue-50/80 p-4 rounded-2xl border border-blue-200">
+                        <p class="text-xs font-bold text-slate-400 uppercase">Skor Akhir</p>
+                        <p id="final-score" class="font-display text-4xl font-extrabold text-blue-600 my-1">0</p>
+                        <p class="text-[11px] text-slate-500">Maksimal 100</p>
+                    </div>
+
+                    <div class="bg-green-50/80 p-4 rounded-2xl border border-green-200">
+                        <p class="text-xs font-bold text-slate-400 uppercase">Jawaban Benar</p>
+                        <p id="correct-count" class="font-display text-4xl font-extrabold text-green-500 my-1">0 / 5</p>
+                        <p class="text-[11px] text-slate-500">Soal Terselesaikan</p>
+                    </div>
+
+                    <div class="bg-purple-50/80 p-4 rounded-2xl border border-purple-200">
+                        <p class="text-xs font-bold text-slate-400 uppercase">Predikat</p>
+                        <p id="performance-grade" class="font-display text-2xl font-extrabold text-purple-600 my-2">Sangat Baik</p>
+                        <p class="text-[11px] text-slate-500">Tingkat Pemahaman</p>
+                    </div>
+                </div>
+
+                <!-- Review Section Header -->
+                <div class="text-left mb-4 flex items-center justify-between">
+                    <h3 class="font-display text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-book-open text-blue-500"></i>
+                        <span>Pembahasan Lengkap Soal</span>
+                    </h3>
+                    <span class="text-xs text-slate-400">Klik tiap soal untuk melihat detail</span>
+                </div>
+
+                <!-- Accordion for Discussions -->
+                <div id="discussion-list" class="space-y-4 text-left mb-8">
+                    <!-- Dynamic discussions populated by JS -->
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onclick="restartQuiz()" class="pixar-btn px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold font-display shadow-3d-blue flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span>Coba Lagi Misi</span>
+                    </button>
+                    <button onclick="window.print()" class="pixar-btn px-6 py-3.5 rounded-2xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold font-display flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-print"></i>
+                        <span>Cetak Hasil</span>
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FORMULA MODAL -->
+    <div id="formula-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="pixar-card p-6 max-w-lg w-full shadow-2xl relative border-2 border-white">
+            <button onclick="toggleFormulaModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold">✕</button>
+            
+            <h3 class="font-display text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-flask text-purple-500"></i>
+                <span>Ringkasan Rumus Asam-Basa</span>
+            </h3>
+
+            <div class="space-y-3 text-xs sm:text-sm text-slate-700 max-h-[60vh] overflow-y-auto pr-1">
+                <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
+                    <p class="font-bold text-blue-800 mb-1">1. Asam Kuat</p>
+                    <p class="font-mono bg-white p-1.5 rounded border">[H⁺] = a × M</p>
+                    <p class="text-[11px] text-slate-500 mt-1">pH = -log[H⁺]</p>
+                </div>
+                <div class="p-3 bg-pink-50 rounded-xl border border-pink-100">
+                    <p class="font-bold text-pink-800 mb-1">2. Basa Kuat</p>
+                    <p class="font-mono bg-white p-1.5 rounded border">[OH⁻] = b × M</p>
+                    <p class="text-[11px] text-slate-500 mt-1">pOH = -log[OH⁻] &nbsp;|&nbsp; pH = 14 - pOH</p>
+                </div>
+                <div class="p-3 bg-amber-50 rounded-xl border border-amber-100">
+                    <p class="font-bold text-amber-800 mb-1">3. Basa Lemah</p>
+                    <p class="font-mono bg-white p-1.5 rounded border">[OH⁻] = √(Kb × M)</p>
+                    <p class="text-[11px] text-slate-500 mt-1">pOH = -log[OH⁻]</p>
+                </div>
+                <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                    <p class="font-bold text-emerald-800 mb-1">4. Mol & Massa</p>
+                    <p class="font-mono bg-white p-1.5 rounded border">n = M × V (dalam Liter)</p>
+                    <p class="font-mono bg-white p-1.5 rounded border mt-1">Massa = n × Mr</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRATCHPAD / CALCULATOR MODAL -->
+    <div id="scratchpad-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="pixar-card p-6 max-w-md w-full shadow-2xl relative border-2 border-white">
+            <button onclick="toggleScratchpad()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold">✕</button>
+            
+            <h3 class="font-display text-xl font-bold text-slate-800 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-calculator text-amber-500"></i>
+                <span>Bantuan Kalkulator Mini & Log</span>
+            </h3>
+
+            <div class="space-y-3">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <p class="text-xs font-bold text-slate-600 mb-1">Nilai Bantuan Logaritma:</p>
+                    <ul class="text-xs text-slate-600 space-y-1 font-mono">
+                        <li>• log(2) ≈ 0,30</li>
+                        <li>• log(3) ≈ 0,48</li>
+                        <li>• log(5) ≈ 0,70</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Coba Hitung -log(x):</label>
+                    <div class="flex gap-2">
+                        <input type="number" step="any" id="log-input" placeholder="misal: 0.002" class="w-full px-3 py-2 rounded-xl border text-sm">
+                        <button onclick="calculateLog()" class="px-4 py-2 bg-amber-500 text-white font-bold rounded-xl text-xs">Hitung</button>
+                    </div>
+                    <p id="log-result" class="text-xs font-bold text-indigo-600 mt-2"></p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Coretan Catatan Siswa:</label>
+                    <textarea id="scratch-text" rows="3" placeholder="Tuliskan angka jalannya perhitungan di sini..." class="w-full p-2.5 rounded-xl border text-xs focus:outline-none"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="w-full text-center py-4 text-xs text-slate-500 font-medium">
+        Media Pembelajaran Interaktif Kimia SMA &copy; 2026 • Kurikulum Merdeka
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // QUESTION BANK DATA
+        const questionsData = [
+            {
+                id: 1,
+                category: "Menghitung pH Asam Kuat",
+                question: "Seorang siswa menyiapkan 250 mL larutan HCl dengan konsentrasi 0,0020 M. HCl merupakan asam kuat yang terionisasi sempurna dalam air. Nilai pH larutan tersebut adalah ...",
+                options: [
+                    { letter: "A", text: "1,70" },
+                    { letter: "B", text: "2,00" },
+                    { letter: "C", text: "2,70" },
+                    { letter: "D", text: "3,00" },
+                    { letter: "E", text: "3,70" }
+                ],
+                correctAnswer: "C",
+                hint: "HCl adalah Asam Kuat Valensi 1. Cari [H+] = M × valensi, lalu pH = -log[H+]. Ingat log(2) ≈ 0,30!",
+                visualType: "acid-strong",
+                formulaText: "[H⁺] = M = 0,0020 M = 2,0 × 10⁻³ M",
+                discussion: "HCl adalah asam kuat monoprotik (valensi = 1).<br>" +
+                            "• [H⁺] = M = 0,0020 M = 2,0 × 10⁻³ M<br>" +
+                            "• pH = -log[H⁺] = -log(2,0 × 10⁻³)<br>" +
+                            "• pH = 3 - log 2 ≈ 3 - 0,30 = <b>2,70</b>"
+            },
+            {
+                id: 2,
+                category: "Menghitung pH Basa Kuat",
+                question: "Larutan NaOH 0,0050 M digunakan dalam suatu percobaan. NaOH terionisasi sempurna. Dengan menggunakan Kw = 1,0 × 10⁻¹⁴, nilai pH larutan NaOH tersebut adalah ...",
+                options: [
+                    { letter: "A", text: "10,00" },
+                    { letter: "B", text: "11,00" },
+                    { letter: "C", text: "11,30" },
+                    { letter: "D", text: "11,70" },
+                    { letter: "E", text: "12,00" }
+                ],
+                correctAnswer: "D",
+                hint: "NaOH adalah Basa Kuat Valensi 1. Cari [OH-] dulu, hitung pOH, kemudian pH = 14 - pOH.",
+                visualType: "base-strong",
+                formulaText: "[OH⁻] = 0,0050 M = 5,0 × 10⁻³ M",
+                discussion: "NaOH adalah basa kuat monoprotik (valensi = 1).<br>" +
+                            "• [OH⁻] = 0,0050 M = 5,0 × 10⁻³ M<br>" +
+                            "• pOH = -log(5,0 × 10⁻³) = 3 - log 5 ≈ 3 - 0,70 = 2,30<br>" +
+                            "• pH = 14 - pOH = 14 - 2,30 = <b>11,70</b>"
+            },
+            {
+                id: 3,
+                category: "Menghitung Massa Asam Kuat",
+                question: "Untuk suatu percobaan diperlukan 200 mL larutan H₂SO₄ 0,10 M. Jika larutan dibuat menggunakan H₂SO₄ murni dengan Mr = 98,0, massa H₂SO₄ yang diperlukan adalah ...",
+                options: [
+                    { letter: "A", text: "0,98 g" },
+                    { letter: "B", text: "1,96 g" },
+                    { letter: "C", text: "2,45 g" },
+                    { letter: "D", text: "9,80 g" },
+                    { letter: "E", text: "19,60 g" }
+                ],
+                correctAnswer: "B",
+                hint: "Ubah volume ke Liter (0,200 L). Hitung mol (n = M × V), lalu hitung massa = n × Mr.",
+                visualType: "mass-calc",
+                formulaText: "V = 0,200 L | M = 0,10 M | Mr = 98,0",
+                discussion: "• Volume (V) = 200 mL = 0,200 L<br>" +
+                            "• Mol (n) = M × V = 0,10 M × 0,200 L = 0,020 mol<br>" +
+                            "• Massa = n × Mr = 0,020 mol × 98,0 g/mol = <b>1,96 g</b>"
+            },
+            {
+                id: 4,
+                category: "Menghitung Mol Basa Kuat",
+                question: "Sebanyak 150 mL larutan Ba(OH)₂ 0,20 M digunakan dalam proses netralisasi. Jumlah mol Ba(OH)₂ yang terdapat dalam larutan tersebut adalah ...",
+                options: [
+                    { letter: "A", text: "0,003 mol" },
+                    { letter: "B", text: "0,015 mol" },
+                    { letter: "C", text: "0,030 mol" },
+                    { letter: "D", text: "0,060 mol" },
+                    { letter: "E", text: "0,300 mol" }
+                ],
+                correctAnswer: "C",
+                hint: "Rumus mol sederhana: n = M × V. Pastikan volume diubah ke satuan Liter!",
+                visualType: "mole-calc",
+                formulaText: "V = 150 mL = 0,150 L | M = 0,20 M",
+                discussion: "• Volume (V) = 150 mL = 0,150 L<br>" +
+                            "• Konsentrasi (M) = 0,20 M<br>" +
+                            "• Mol Ba(OH)₂ = M × V = 0,20 M × 0,150 L = <b>0,030 mol</b>"
+            },
+            {
+                id: 5,
+                category: "Menghitung pOH Basa Lemah",
+                question: "Larutan NH₃ 0,10 M memiliki Kb = 1,0 × 10⁻⁵. Dengan menganggap perubahan konsentrasi NH₃ kecil dibandingkan konsentrasi awalnya, nilai pOH larutan tersebut adalah ...",
+                options: [
+                    { letter: "A", text: "2,00" },
+                    { letter: "B", text: "2,50" },
+                    { letter: "C", text: "3,00" },
+                    { letter: "D", text: "4,50" },
+                    { letter: "E", text: "5,00" }
+                ],
+                correctAnswer: "C",
+                hint: "NH₃ adalah basa lemah. Gunakan [OH-] = √(Kb × M), lalu hitung pOH = -log[OH-].",
+                visualType: "base-weak",
+                formulaText: "[OH⁻] = √(Kb × M) = √(10⁻⁵ × 10⁻¹)",
+                discussion: "NH₃ adalah basa lemah.<br>" +
+                            "• [OH⁻] = √(Kb × M) = √(1,0 × 10⁻⁵ × 0,10) = √(1,0 × 10⁻⁶) = 1,0 × 10⁻³ M<br>" +
+                            "• pOH = -log[OH⁻] = -log(1,0 × 10⁻³) = <b>3,00</b>"
+            }
+        ];
+
+        // STATE VARIABLES
+        let currentQuestionIndex = 0;
+        let userAnswers = {}; // { questionId: selectedLetter }
+        let studentName = "";
+        let timerSeconds = 25 * 60; // 25 minutes
+        let timerInterval = null;
+
+        // APPLICATION INIT
+        function startQuiz() {
+            const inputName = document.getElementById("student-name").value.trim();
+            if (!inputName) {
+                alert("Silakan masukkan nama kamu terlebih dahulu untuk memulai!");
+                return;
+            }
+            studentName = inputName;
+            document.getElementById("display-student-name").textContent = studentName;
+            document.getElementById("user-badge").classList.remove("hidden");
+
+            // Switch Screen
+            document.getElementById("welcome-screen").classList.add("hidden");
+            document.getElementById("quiz-screen").classList.remove("hidden");
+
+            // Start Timer & Render First Question
+            startTimer();
+            renderQuestion(0);
+        }
+
+        // TIMER LOGIC
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (timerSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    finishQuiz();
+                } else {
+                    timerSeconds--;
+                    const minutes = Math.floor(timerSeconds / 60);
+                    const seconds = timerSeconds % 60;
+                    document.getElementById("timer-display").textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        // RENDER QUESTION
+        function renderQuestion(index) {
+            currentQuestionIndex = index;
+            const q = questionsData[index];
+
+            // Tracker & Progress
+            document.getElementById("question-tracker").textContent = `Soal ${index + 1} dari ${questionsData.length}`;
+            const progressPct = ((index + 1) / questionsData.length) * 100;
+            document.getElementById("progress-bar").style.width = `${progressPct}%`;
+
+            // Text Content
+            document.getElementById("question-category").textContent = q.category;
+            document.getElementById("question-text").textContent = q.question;
+            document.getElementById("mascot-hint-box").innerHTML = `💡 <b>Petunjuk Chemmy:</b> ${q.hint}`;
+
+            // Render Visual Lab Illustration based on visualType
+            renderLabVisual(q);
+
+            // Render Options
+            const optionsContainer = document.getElementById("options-container");
+            optionsContainer.innerHTML = "";
+
+            q.options.forEach(opt => {
+                const isSelected = userAnswers[q.id] === opt.letter;
+                
+                const optBtn = document.createElement("button");
+                optBtn.className = `option-card w-full p-4 rounded-2xl border-2 text-left flex items-center justify-between cursor-pointer transition-all ${
+                    isSelected 
+                    ? 'bg-blue-500 text-white border-blue-600 shadow-3d-blue font-bold scale-[1.01]' 
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-slate-50'
+                }`;
+
+                optBtn.onclick = () => selectOption(q.id, opt.letter);
+
+                optBtn.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-display font-bold ${
+                            isSelected ? 'bg-white text-blue-600' : 'bg-slate-100 text-slate-500'
+                        }">
+                            ${opt.letter}
+                        </span>
+                        <span class="text-sm font-semibold">${opt.text}</span>
+                    </div>
+                    <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                        isSelected ? 'border-white bg-white/20' : 'border-slate-300'
+                    }">
+                        ${isSelected ? '<i class="fa-solid fa-check text-xs text-white"></i>' : ''}
+                    </div>
+                `;
+
+                optionsContainer.appendChild(optBtn);
+            });
+
+            // Nav buttons state
+            document.getElementById("prev-btn").disabled = index === 0;
+            const nextBtn = document.getElementById("next-btn");
+            if (index === questionsData.length - 1) {
+                nextBtn.innerHTML = `<span>Selesai & Lihat Hasil</span> <i class="fa-solid fa-check-double"></i>`;
+                nextBtn.className = "pixar-btn px-6 py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-3d-green";
+            } else {
+                nextBtn.innerHTML = `<span>Selanjutnya</span> <i class="fa-solid fa-arrow-right"></i>`;
+                nextBtn.className = "pixar-btn px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-3d-blue";
+            }
+        }
+
+        // RENDER LAB VISUAL ANIMATION
+        function renderLabVisual(q) {
+            const container = document.getElementById("visual-experiment");
+            let liquidColor = "#00A8FF"; // Default Blue
+            let chemicalName = "";
+
+            if (q.visualType === 'acid-strong') {
+                liquidColor = "#FF70A6"; // Pinkish Acid
+                chemicalName = "Larutan HCl (Asam Kuat)";
+            } else if (q.visualType === 'base-strong') {
+                liquidColor = "#06D6A0"; // Greenish Base
+                chemicalName = "Larutan NaOH (Basa Kuat)";
+            } else if (q.visualType === 'mass-calc') {
+                liquidColor = "#9C88FF"; // Purple H2SO4
+                chemicalName = "Larutan H₂SO₄ 0,10 M";
+            } else if (q.visualType === 'mole-calc') {
+                liquidColor = "#FFD166"; // Yellow Ba(OH)2
+                chemicalName = "Larutan Ba(OH)₂";
+            } else {
+                liquidColor = "#38BDF8"; // Light Blue NH3
+                chemicalName = "Larutan NH₃ (Basa Lemah)";
+            }
+
+            container.innerHTML = `
+                <div class="flex items-center gap-4 z-10">
+                    <svg viewBox="0 0 100 120" class="w-16 h-20 drop-shadow-lg">
+                        <path d="M30 20 L70 20 L70 25 L65 35 L65 100 C65 108 58 115 50 115 C42 115 35 108 35 100 L35 35 L30 25 Z" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+                        <path d="M37 55 Q50 50 63 55 L63 100 C63 105 57 110 50 110 C43 110 37 105 37 100 Z" fill="${liquidColor}" opacity="0.8">
+                            <animate attributeName="d" dur="3s" repeatCount="indefinite" values="
+                                M37 55 Q50 50 63 55 L63 100 C63 105 57 110 50 110 C43 110 37 105 37 100 Z;
+                                M37 58 Q50 62 63 58 L63 100 C63 105 57 110 50 110 C43 110 37 105 37 100 Z;
+                                M37 55 Q50 50 63 55 L63 100 C63 105 57 110 50 110 C43 110 37 105 37 100 Z
+                            "/>
+                        </path>
+                        <circle cx="45" cy="80" r="3" fill="#FFF" opacity="0.7"><animate attributeName="cy" dur="2s" repeatCount="indefinite" from="90" to="60"/></circle>
+                        <circle cx="55" cy="75" r="2" fill="#FFF" opacity="0.7"><animate attributeName="cy" dur="1.5s" repeatCount="indefinite" from="85" to="55"/></circle>
+                    </svg>
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-widest text-cyan-400">Simulasi Lab 3D</span>
+                        <h4 class="font-display text-base font-bold text-white">${chemicalName}</h4>
+                        <p class="text-xs text-slate-300 font-mono mt-0.5">${q.formulaText}</p>
+                    </div>
+                </div>
+                <div class="hidden sm:block text-right z-10">
+                    <span class="inline-block p-2 rounded-xl bg-white/10 text-[11px] font-mono text-cyan-200 border border-white/20">
+                        <i class="fa-solid fa-atom mr-1"></i> Terionisasi Dalam Air
+                    </span>
+                </div>
+            `;
+        }
+
+        // OPTION SELECTION LOGIC
+        function selectOption(questionId, letter) {
+            userAnswers[questionId] = letter;
+            renderQuestion(currentQuestionIndex);
+        }
+
+        // NAVIGATION LOGIC
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) {
+                renderQuestion(currentQuestionIndex - 1);
+            }
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < questionsData.length - 1) {
+                renderQuestion(currentQuestionIndex + 1);
+            } else {
+                finishQuiz();
+            }
+        }
+
+        // FINISH & CALCULATE RESULTS
+        function finishQuiz() {
+            clearInterval(timerInterval);
+
+            // Calculate Score
+            let correctAnswersCount = 0;
+            questionsData.forEach(q => {
+                if (userAnswers[q.id] === q.correctAnswer) {
+                    correctAnswersCount++;
+                }
+            });
+
+            const score = (correctAnswersCount / questionsData.length) * 100;
+
+            // Display Results
+            document.getElementById("quiz-screen").classList.add("hidden");
+            document.getElementById("result-screen").classList.remove("hidden");
+
+            document.getElementById("result-greeting").textContent = `Hebat sekali, ${studentName}! Berikut adalah evaluasi kamu.`;
+            document.getElementById("final-score").textContent = Math.round(score);
+            document.getElementById("correct-count").textContent = `${correctAnswersCount} / ${questionsData.length}`;
+
+            // Grade Tag
+            let grade = "Sangat Baik 🌟";
+            if (score === 100) grade = "Sempurna! 🏆";
+            else if (score >= 80) grade = "Sangat Baik 👍";
+            else if (score >= 60) grade = "Cukup Baik 😊";
+            else grade = "Perlu Belajar Lagi 📚";
+            document.getElementById("performance-grade").textContent = grade;
+
+            // Trigger Confetti
+            if (score >= 60) {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+
+            // Render Discussions
+            renderDiscussions();
+        }
+
+        // RENDER DISCUSSIONS
+        function renderDiscussions() {
+            const listContainer = document.getElementById("discussion-list");
+            listContainer.innerHTML = "";
+
+            questionsData.forEach((q, idx) => {
+                const userChoice = userAnswers[q.id] || "Tidak Dijawab";
+                const isCorrect = userChoice === q.correctAnswer;
+
+                const item = document.createElement("div");
+                item.className = `p-4 rounded-2xl border-2 transition ${
+                    isCorrect ? 'bg-green-50/60 border-green-200' : 'bg-red-50/60 border-red-200'
+                }`;
+
+                item.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs font-bold font-display px-2.5 py-1 rounded-lg ${
+                            isCorrect ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'
+                        }">
+                            Soal #${idx + 1} - ${isCorrect ? 'BENAR ✓' : 'SALAH ✕'}
+                        </span>
+                        <span class="text-xs font-bold text-slate-500">
+                            Jawaban Kamu: <strong class="${isCorrect ? 'text-green-600' : 'text-red-600'}">${userChoice}</strong> | Benar: <strong class="text-green-600">${q.correctAnswer}</strong>
+                        </span>
+                    </div>
+                    <p class="text-xs sm:text-sm font-semibold text-slate-800 mb-3">${q.question}</p>
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 text-xs text-slate-700 leading-relaxed">
+                        <p class="font-bold text-blue-600 mb-1"><i class="fa-solid fa-lightbulb"></i> Pembahasan Lengkap:</p>
+                        ${q.discussion}
+                    </div>
+                `;
+
+                listContainer.appendChild(item);
+            });
+        }
+
+        // RESTART QUIZ
+        function restartQuiz() {
+            userAnswers = {};
+            currentQuestionIndex = 0;
+            timerSeconds = 25 * 60;
+
+            document.getElementById("result-screen").classList.add("hidden");
+            document.getElementById("welcome-screen").classList.remove("hidden");
+        }
+
+        // MODAL TOGGLES
+        function toggleFormulaModal() {
+            const modal = document.getElementById("formula-modal");
+            modal.classList.toggle("hidden");
+        }
+
+        function toggleScratchpad() {
+            const modal = document.getElementById("scratchpad-modal");
+            modal.classList.toggle("hidden");
+        }
+
+        // CALCULATE LOG HELPER
+        function calculateLog() {
+            const val = parseFloat(document.getElementById("log-input").value);
+            if (isNaN(val) || val <= 0) {
+                document.getElementById("log-result").textContent = "Masukkan angka positif valid!";
+                return;
+            }
+            const pVal = -Math.log10(val);
+            document.getElementById("log-result").textContent = `-log(${val}) = ${pVal.toFixed(2)}`;
+        }
+    </script>
+</body>
+</html>
